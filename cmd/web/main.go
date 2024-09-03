@@ -2,34 +2,29 @@ package main
 
 import (
 	"flag"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 )
+
+// application struct holds the application-wide dependencies for the web application.
+type application struct {
+    logger *slog.Logger
+}
 
 func main() {
     addr := flag.String("addr", ":4000", "HTTP network address")
-
-    // Importantly, we use the flag.Parse() function to parse the command line flag. 
-    // This reads in the command-line flag value and assigns it to th addr variable. 
-    // You need to call this *before* you use the addr variable, otherwise it will 
-    // always contain the default value of ":4000". If any errors are encountered 
-    // during parsing the application will be terminated.
     flag.Parse()
 
-    mux := http.NewServeMux()
+    logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-    fileServer := http.FileServer(http.Dir("./ui/static/"))
-    mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
+    app := &application{
+        logger: logger,
+    }
 
-    mux.HandleFunc("GET /{$}", home)
-    mux.HandleFunc("GET /snippet/view/{id}", snippetView)
-    mux.HandleFunc("GET /snippet/create", snippetCreate)
-    mux.HandleFunc("POST /snippet/create", snippetCreatePost)
+    logger.Info("starting server", "addr", *addr)
 
-    // The value returned from the flag.String() function is a pointer to the flag 
-    // value, not the value itself.
-    log.Printf("starting server on %s", *addr)
-
-    err := http.ListenAndServe(*addr, mux)
-    log.Fatal(err)
+    err := http.ListenAndServe(*addr, app.routes())
+    logger.Error(err.Error())
+    os.Exit(1)
 }
