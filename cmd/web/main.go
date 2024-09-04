@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -13,14 +14,17 @@ import (
 
 // application struct holds the application-wide dependencies for the web application.
 type application struct {
-    logger  *slog.Logger
-    snippet *models.SnippetModel
+    logger        *slog.Logger
+    snippet       *models.SnippetModel
+    templateCache map[string]*template.Template
 }
 
 func main() {
     addr := flag.String("addr", ":4000", "HTTP network address")
     dbDriver := flag.String("dbdriver", "mysql", "Database driver name")
-    dsn := flag.String("dsn", "zeb:zebpwd@tcp(localhost:3306)/snippetbox?parseTime=true", "MySQL data source name")
+    dsn := flag.String("dsn",
+        "zeb:zebpwd@tcp(localhost:3306)/snippetbox?parseTime=true",
+        "MySQL data source name")
     flag.Parse()
 
     logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -30,14 +34,19 @@ func main() {
         logger.Error(err.Error())
         os.Exit(1)
     }
-
-    // We defer a call to db.Close(), so that the connection pool is
-    // closed before the main() function exits.
     defer db.Close()
 
+    // Initialize a new template cache.
+    templateCache, err := newTemplateCache()
+    if err != nil {
+        logger.Error(err.Error())
+        os.Exit(1)
+    }
+
     app := &application{
-        logger: logger,
-        snippet: &models.SnippetModel{DB: db},
+        logger:        logger,
+        snippet:       &models.SnippetModel{DB: db},
+        templateCache: templateCache,
     }
 
     logger.Info("starting server", "addr", *addr)
