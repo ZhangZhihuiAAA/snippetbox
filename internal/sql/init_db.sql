@@ -49,3 +49,11 @@ COMMIT;
 CREATE USER zeb;
 GRANT SELECT, INSERT, UPDATE, DELETE ON snippetbox.* TO zeb;
 ALTER USER zeb IDENTIFIED BY 'zebpwd';
+
+
+CREATE TABLE sessions (
+    token  CHAR(43)     PRIMARY KEY,
+    data   BLOB         NOT NULL,
+    expiry TIMESTAMP(6) NOT NULL
+);
+CREATE INDEX idx_sessions_expiry ON sessions (expiry);
