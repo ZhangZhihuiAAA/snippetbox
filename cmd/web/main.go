@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"database/sql"
 	"flag"
 	"html/template"
@@ -50,12 +51,11 @@ func main() {
 
     formDecoder := form.NewDecoder()
 
-    // Use the scs.New() function to initialize a new session manager. Then we configure it to use
-    // our MySQL database as the session store, and set a lifetime of 12 hours (so that sessions
-    // automatically expire 12 hours afer first being created).
     sessionManager := scs.New()
     sessionManager.Store = mysqlstore.New(db)
     sessionManager.Lifetime = 12 * time.Hour
+    sessionManager.Cookie.Secure = true // Setting this means the cookie will only be sent by a
+    // user's web browser when an HTTPS connection is used.
 
     app := &application{
         logger:         logger,
@@ -65,9 +65,23 @@ func main() {
         sessionManager: sessionManager,
     }
 
+    tlsConfig := &tls.Config{
+        CurvePreferences: []tls.CurveID{tls.X25519, tls.CurveP256},
+    }
+
+    srv := &http.Server{
+        Addr:         *addr,
+        Handler:      app.routes(),
+        ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
+        TLSConfig:    tlsConfig,
+        IdleTimeout:  time.Minute,
+        ReadTimeout:  5 * time.Second,
+        WriteTimeout: 10 * time.Second,
+    }
+
     logger.Info("starting server", "addr", *addr)
 
-    err = http.ListenAndServe(*addr, app.routes())
+    err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
     logger.Error(err.Error())
     os.Exit(1)
 }
