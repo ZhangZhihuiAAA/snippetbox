@@ -10,8 +10,10 @@ go_get:
 	go get github.com/go-playground/form/v4
 	go get github.com/alexedwards/scs/v2
 	go get github.com/alexedwards/scs/mysqlstore
+	go get golang.org/x/crypto/bcrypt
+	go get github.com/justinas/nosurf
 
-login_mysql_root:
+mysql_root:
 	docker exec -it mysql mysql -uroot -prootpwd
 
-.PHONY: run_mysql start_mysql go_get login_mysql_root
+.PHONY: run_mysql start_mysql go_get mysql_root

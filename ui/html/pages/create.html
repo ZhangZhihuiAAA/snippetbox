@@ -2,13 +2,13 @@
 
 {{define "main"}}
             <form action="/snippet/create" method="POST">
+                <!-- Include the CSRF token -->
+                <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
                 <div>
                     <label>Title:</label>
-                    <!-- Uset the `with` action to render the value of .Form.FieldErrors.title if it is not empty. -->
                     {{with .Form.FieldErrors.title}}
                     <label class="error">{{.}}</label>
                     {{end}}
-                    <!-- Repopulate the title data by setting the `value` atribute. -->
                     <input type="text" name="title" value="{{.Form.Title}}">
                 </div>
                 <div>
@@ -23,8 +23,6 @@
                     {{with .Form.FieldErrors.expires}}
                     <label class="error">{{.}}</label>
                     {{end}}
-                    <!-- Here we use `if` action to check if the value of the re-populated expires field equals 365. 
-                         If it does, we render the `checked` attribute so that the radio input is re-selected. -->
                     <input type="radio" name="expires" value="365" {{if (eq .Form.Expires 365)}}checked{{end}}> One Year
                     <input type="radio" name="expires" value="7" {{if (eq .Form.Expires 7)}}checked{{end}}> One Week
                     <input type="radio" name="expires" value="1" {{if (eq .Form.Expires 1)}}checked{{end}}> One Day

@@ -6,11 +6,11 @@ USE snippetbox;
 
 -- Create a `snippet` table.
 CREATE TABLE snippet (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    title VARCHAR(100) NOT NULL,
-    content TEXT NOT NULL,
-    created DATETIME NOT NULL,
-    expires DATETIME NOT NULL
+    id      INTEGER      NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    title   VARCHAR(100) NOT NULL,
+    content TEXT         NOT NULL,
+    created DATETIME     NOT NULL,
+    expires DATETIME     NOT NULL
 );
 
 -- Add an index on the created column.
@@ -57,3 +57,12 @@ CREATE TABLE sessions (
     expiry TIMESTAMP(6) NOT NULL
 );
 CREATE INDEX idx_sessions_expiry ON sessions (expiry);
+
+CREATE TABLE user (
+    id              INTEGER      NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name            VARCHAR(255) NOT NULL,
+    email           VARCHAR(255) NOT NULL,
+    hashed_password CHAR(60)     NOT NULL,
+    created         DATETIME     NOT NULL
+);
+ALTER TABLE user ADD CONSTRAINT uc_user_email UNIQUE (email);

@@ -8,12 +8,13 @@ import (
 	"time"
 
 	"github.com/go-playground/form/v4"
+	"github.com/justinas/nosurf"
 )
 
 func (app *application) serverError(w http.ResponseWriter, r *http.Request, err error) {
     var (
         method = r.Method
-        uri = r.URL.RequestURI()
+        uri    = r.URL.RequestURI()
     )
 
     app.logger.Error(err.Error(), "method", method, "uri", uri)
@@ -24,11 +25,11 @@ func (app *application) clientError(w http.ResponseWriter, status int) {
     http.Error(w, http.StatusText(status), status)
 }
 
-func (app *application) render(w http.ResponseWriter, 
-                               r *http.Request, 
-                               status int, 
-                               page string, 
-                               data templateData) {
+func (app *application) render(w http.ResponseWriter,
+    r *http.Request,
+    status int,
+    page string,
+    data templateData) {
     ts, ok := app.templateCache[page]
     if !ok {
         err := fmt.Errorf("the template %s does not exist", page)
@@ -51,9 +52,10 @@ func (app *application) render(w http.ResponseWriter,
 
 func (app *application) newTemplateData(r *http.Request) templateData {
     return templateData{
-        CurrentYear: time.Now().Year(),
-        // Add the flash message to the template data, if one exists.
-        Flash: app.sessionManager.PopString(r.Context(), "flash"),
+        CurrentYear:     time.Now().Year(),
+        Flash:           app.sessionManager.PopString(r.Context(), "flash"),
+        IsAuthenticated: app.isAuthenticated(r),
+        CSRFToken:       nosurf.Token(r),
     }
 }
 
@@ -65,12 +67,12 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
         return err
     }
 
-    // Call Decode() on our decoder instance, passing the target destination as the first 
+    // Call Decode() on our decoder instance, passing the target destination as the first
     // parameter.
     err = app.formDecoder.Decode(dst, r.PostForm)
     if err != nil {
-        // If we try to use an invalid target destination, the Decode() method will return an 
-        // error with the type *form.InvalidDecoderError. We use errors.As() to check for this 
+        // If we try to use an invalid target destination, the Decode() method will return an
+        // error with the type *form.InvalidDecoderError. We use errors.As() to check for this
         // and raise a panic rather than returning the error.
         var invalidDecodeError *form.InvalidDecoderError
 
@@ -83,4 +85,8 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
     }
 
     return nil
+}
+
+func (app *application) isAuthenticated(r *http.Request) bool {
+    return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
 }
