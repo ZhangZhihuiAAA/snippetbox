@@ -227,8 +227,8 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Use the RenewToken() method on the current session to change the session ID. It's a good 
-    // practice to generate a new session ID when the authentication state or privilage level 
+    // Use the RenewToken() method on the current session to change the session ID. It's a good
+    // practice to generate a new session ID when the authentication state or privilage level
     // changes for the user (e.g. login and logout operations).
     err = app.sessionManager.RenewToken(r.Context())
     if err != nil {
@@ -239,7 +239,7 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
     // Add the ID of the current user to the session, so that they are now 'logged in'.
     app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 
-    // Use the PopString method to retrieve and remove a value from the session data in one step. 
+    // Use the PopString method to retrieve and remove a value from the session data in one step.
     // If no matching key exists this will return the empty string.
     path := app.sessionManager.PopString(r.Context(), "redirectPathAfterLogin")
     if path != "" {
@@ -266,4 +266,63 @@ func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
 
     // Redirect the user to the application home page.
     http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+type accountPasswordUpdateForm struct {
+    CurrentPassword         string `form:"currentPassword"`
+    NewPassword             string `form:"newPassword"`
+    NewPasswordConfirmation string `form:"newPasswordConfirmation"`
+    validator.Validator     `form:"-"`
+}
+
+func (app *application) accountPasswordUpdate(w http.ResponseWriter, r *http.Request) {
+    data := app.newTemplateData(r)
+    data.Form = accountPasswordUpdateForm{}
+
+    app.render(w, r, http.StatusOK, "password.html", data)
+}
+
+func (app *application) accountPasswordUpdatePost(w http.ResponseWriter, r *http.Request) {
+    var form accountPasswordUpdateForm
+
+    err := app.decodePostForm(r, &form)
+    if err != nil {
+        app.clientError(w, http.StatusBadRequest)
+        return
+    }
+
+    form.CheckField(validator.NotEmpty(form.CurrentPassword), "currentPassword", "Thif field cannot be empty.")
+    form.CheckField(validator.NotEmpty(form.NewPassword), "newPassword", "This field cannot be empty.")
+    form.CheckField(validator.MinChars(form.NewPassword, 8), "newPassword", "This field must be at least 8 characters long.")
+    form.CheckField(validator.NotEmpty(form.NewPasswordConfirmation), "newPasswordConfirmation", "This field cannot be empty.")
+    form.CheckField(form.NewPassword == form.NewPasswordConfirmation, "newPasswordConfirmation", "Passwords do not match.")
+
+    if !form.Valid() {
+        data := app.newTemplateData(r)
+        data.Form = form
+
+        app.render(w, r, http.StatusUnprocessableEntity, "password.html", data)
+        return
+    }
+
+    userID := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+    err = app.user.UpdatePassword(userID, form.CurrentPassword, form.NewPassword)
+    if err != nil {
+        if errors.Is(err, models.ErrInvalidCredentials) {
+            form.AddFieldError("currentPassword", "Current password is incorrect.")
+
+            data := app.newTemplateData(r)
+            data.Form = form
+
+            app.render(w, r, http.StatusUnprocessableEntity, "password.html", data)
+        } else {
+            app.serverError(w, r, err)
+        }
+        return
+    }
+
+    app.sessionManager.Put(r.Context(), "flash", "Your password has been updated!")
+
+    http.Redirect(w, r, "/account/view", http.StatusSeeOther)
 }

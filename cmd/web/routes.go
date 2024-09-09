@@ -11,6 +11,7 @@ func (app *application) routes() http.Handler {
     mux := http.NewServeMux()
 
     mux.Handle("GET /static/", http.FileServerFS(ui.Files))
+
     mux.HandleFunc("GET /ping", ping)
 
     // Unprotected routes using the "dynamic" middleware chain.
@@ -32,6 +33,8 @@ func (app *application) routes() http.Handler {
     mux.Handle("POST /snippet/create", protected.ThenFunc(app.snippetCreatePost))
     mux.Handle("POST /user/logout", protected.ThenFunc(app.userLogoutPost))
     mux.Handle("GET /account/view", protected.ThenFunc(app.accountView))
+    mux.Handle("GET /account/password/update", protected.ThenFunc(app.accountPasswordUpdate))
+    mux.Handle("POST /account/password/update", protected.ThenFunc(app.accountPasswordUpdatePost))
 
     standard := alice.New(app.recoverPanic, app.logRequest, commonHeaders)
 
