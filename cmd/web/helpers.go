@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"time"
 
 	"github.com/go-playground/form/v4"
@@ -15,9 +16,17 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
     var (
         method = r.Method
         uri    = r.URL.RequestURI()
+        trace  = string(debug.Stack())
     )
 
     app.logger.Error(err.Error(), "method", method, "uri", uri)
+
+    if app.debug {
+        body := fmt.Sprintf("%s\n\n%s", err, trace)
+        http.Error(w, body, http.StatusInternalServerError)
+        return
+    }
+
     http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
@@ -61,14 +70,11 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 
 // The second parameter dst is the target destination that we want to decode the form data into.
 func (app *application) decodePostForm(r *http.Request, dst any) error {
-    // Call ParseForm() on the request
     err := r.ParseForm()
     if err != nil {
         return err
     }
 
-    // Call Decode() on our decoder instance, passing the target destination as the first
-    // parameter.
     err = app.formDecoder.Decode(dst, r.PostForm)
     if err != nil {
         // If we try to use an invalid target destination, the Decode() method will return an

@@ -18,9 +18,10 @@ import (
 )
 
 type application struct {
+    debug          bool
     logger         *slog.Logger
-    snippet        models.SnippetModelInterface  // Use our new interface type.
-    user           models.UserModelInterface     // Use our new interface type.
+    snippet        models.SnippetModelInterface
+    user           models.UserModelInterface
     templateCache  map[string]*template.Template
     formDecoder    *form.Decoder
     sessionManager *scs.SessionManager
@@ -32,6 +33,7 @@ func main() {
     dsn := flag.String("dsn",
         "zeb:zebpwd@tcp(localhost:3306)/snippetbox?parseTime=true",
         "MySQL data source name")
+    debug := flag.Bool("debug", false, "Enable debug mode")
     flag.Parse()
 
     logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
@@ -57,6 +59,7 @@ func main() {
     sessionManager.Cookie.Secure = true // Setting this means the cookie will only be sent by a user's web browser when an HTTPS connection is used.
 
     app := &application{
+        debug:          *debug,
         logger:         logger,
         snippet:        &models.SnippetModel{DB: db},
         user:           &models.UserModel{DB: db},
