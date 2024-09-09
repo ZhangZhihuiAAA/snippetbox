@@ -213,8 +213,6 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // Check whether the credentials are valid. If they're not, add a generic non-field error 
-    // message and re-display the login page.
     id, err := app.user.Authenticate(form.Email, form.Password)
     if err != nil {
         if errors.Is(err, models.ErrInvalidCredentials) {
@@ -241,7 +239,14 @@ func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
     // Add the ID of the current user to the session, so that they are now 'logged in'.
     app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
 
-    // Redirect the user to the create snippet page.
+    // Use the PopString method to retrieve and remove a value from the session data in one step. 
+    // If no matching key exists this will return the empty string.
+    path := app.sessionManager.PopString(r.Context(), "redirectPathAfterLogin")
+    if path != "" {
+        http.Redirect(w, r, path, http.StatusSeeOther)
+        return
+    }
+
     http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
 }
 
