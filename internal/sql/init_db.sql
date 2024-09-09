@@ -1,10 +1,9 @@
--- Create a new UTF-8 `snippetbox` database.
 CREATE DATABASE snippetbox CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Switch to using the `snippetbox` database.
+
 USE snippetbox;
 
--- Create a `snippet` table.
+
 CREATE TABLE snippet (
     id      INTEGER      NOT NULL PRIMARY KEY AUTO_INCREMENT,
     title   VARCHAR(100) NOT NULL,
@@ -13,7 +12,6 @@ CREATE TABLE snippet (
     expires DATETIME     NOT NULL
 );
 
--- Add an index on the created column.
 CREATE INDEX idx_snippet_created ON snippet(created);
 
 INSERT INTO snippet (title, content, created, expires) VALUES (
@@ -56,7 +54,9 @@ CREATE TABLE sessions (
     data   BLOB         NOT NULL,
     expiry TIMESTAMP(6) NOT NULL
 );
+
 CREATE INDEX idx_sessions_expiry ON sessions (expiry);
+
 
 CREATE TABLE user (
     id              INTEGER      NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -65,4 +65,13 @@ CREATE TABLE user (
     hashed_password CHAR(60)     NOT NULL,
     created         DATETIME     NOT NULL
 );
+
 ALTER TABLE user ADD CONSTRAINT uc_user_email UNIQUE (email);
+
+
+
+CREATE DATABASE test_snippetbox CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+CREATE USER test_web;
+GRANT CREATE, DROP, ALTER, INDEX, SELECT, INSERT, UPDATE, DELETE ON test_snippetbox.* TO test_web;
+ALTER USER test_web IDENTIFIED BY 'test';

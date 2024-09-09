@@ -17,11 +17,10 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// application struct holds the application-wide dependencies for the web application.
 type application struct {
     logger         *slog.Logger
-    snippet        *models.SnippetModel
-    user           *models.UserModel
+    snippet        models.SnippetModelInterface  // Use our new interface type.
+    user           models.UserModelInterface     // Use our new interface type.
     templateCache  map[string]*template.Template
     formDecoder    *form.Decoder
     sessionManager *scs.SessionManager
@@ -55,8 +54,7 @@ func main() {
     sessionManager := scs.New()
     sessionManager.Store = mysqlstore.New(db)
     sessionManager.Lifetime = 12 * time.Hour
-    sessionManager.Cookie.Secure = true // Setting this means the cookie will only be sent by a
-    // user's web browser when an HTTPS connection is used.
+    sessionManager.Cookie.Secure = true // Setting this means the cookie will only be sent by a user's web browser when an HTTPS connection is used.
 
     app := &application{
         logger:         logger,
