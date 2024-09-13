@@ -2,7 +2,7 @@ package main
 
 import (
 	"net/http"
-	"zsnippetbox/ui"
+	"snippetbox/ui"
 
 	"github.com/justinas/alice"
 )
