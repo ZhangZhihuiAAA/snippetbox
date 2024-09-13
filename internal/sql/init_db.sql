@@ -43,10 +43,10 @@ COMMIT;
 
 
 -- This user can successfully connect to database with 
--- DSN "zeb:zebpwd@tcp(localhost:3306)/snippetbox?parseTime=true" .
-CREATE USER zeb;
-GRANT SELECT, INSERT, UPDATE, DELETE ON snippetbox.* TO zeb;
-ALTER USER zeb IDENTIFIED BY 'zebpwd';
+-- DSN "zzh:zzhpwd@tcp(localhost:3306)/snippetbox?parseTime=true" .
+CREATE USER zzh;
+GRANT SELECT, INSERT, UPDATE, DELETE ON zsnippetbox.* TO zzh;
+ALTER USER zzh IDENTIFIED BY 'zzhpwd';
 
 
 CREATE TABLE sessions (

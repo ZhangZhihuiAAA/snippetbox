@@ -1,5 +1,5 @@
 run_mysql:
-	docker run --name mysql -p 3306:3306 mysql
+	docker run -d --name mysql -p 3306:3306  -e MYSQL_ROOT_PASSWORD=rootpwd mysql
 
 start_mysql:
 	docker container start mysql

@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/alexedwards/scs/v2"
-	"github.com/go-playground/form/v4"
 )
 
 func newTestApplication(t *testing.T) *application {
@@ -23,8 +22,6 @@ func newTestApplication(t *testing.T) *application {
     if err != nil {
         t.Fatal(err)
     }
-
-    formDecoder := form.NewDecoder()
 
     // Note that we use the same settings as production, except that we *don't* set a Store for
     // the session manager. If no store is set, the SCS package will default to using a transient
@@ -35,11 +32,10 @@ func newTestApplication(t *testing.T) *application {
 
     return &application{
         logger:         slog.New(slog.NewTextHandler(io.Discard, nil)),
-        snippet:        &mocks.SnippetModel{},
-        user:           &mocks.UserModel{},
         templateCache:  templateCache,
-        formDecoder:    formDecoder,
         sessionManager: sessionManager,
+        user:           &mocks.UserModel{},
+        snippet:        &mocks.SnippetModel{},
     }
 }
 

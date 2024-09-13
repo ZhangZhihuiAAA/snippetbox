@@ -14,65 +14,62 @@ import (
 // it.
 var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
+// NotEmpty reports whether s is empty after being trimmed.
+func NotEmpty(s string) bool {
+    return strings.TrimSpace(s) != ""
+}
+
+// MinChars reports whether s contains at least n characters.
+func MinChars(s string, n int) bool {
+    return utf8.RuneCountInString(s) >= n
+}
+
+// MaxChars reports whether s contains no more than n characters.
+func MaxChars(s string, n int) bool {
+    return utf8.RuneCountInString(s) <= n
+}
+
+// PermittedValue reports whether v is one of permittedValues.
+func PermittedValue[T comparable](v T, permittedValues ...T) bool {
+    return slices.Contains(permittedValues, v)
+}
+
+// Match reports whether the string (s) and the compiled regular expression pattern (rx) match.
+func Match(s string, rx *regexp.Regexp) bool {
+    return rx.MatchString(s)
+}
+
 // Validator contains structures that hold validation errors.
 type Validator struct {
     NonFieldErrors []string  // Holds validation errors which are not related to a specific form field.
     FieldErrors    map[string]string  // Holds validation errors for form fields.
 }
 
-// Valid returns true if both NonFieldErrors and FieldErrors are empty.
+// Valid reports whether both NonFieldErrors and FieldErrors of v are empty.
 func (v *Validator) Valid() bool {
     return len(v.NonFieldErrors) == 0 && len(v.FieldErrors) == 0
 }
 
-// AddNonFieldError adds error messages to the NonFieldErrors slice.
-func (v *Validator) AddNonFieldError(message string) {
-    v.NonFieldErrors = append(v.NonFieldErrors, message)
+// AddNonFieldError adds an error message to the NonFieldErrors slice of v.
+func (v *Validator) AddNonFieldError(msg string) {
+    v.NonFieldErrors = append(v.NonFieldErrors, msg)
 }
 
-// AddFieldError adds an error message to the FieldErrors map (so long as
-// no entry already exists for the given key).
-func (v *Validator) AddFieldError(key, message string) {
-    // Note: We need to initialize the map first if it isn't already
-    // initialized.
+// AddFieldError adds an error message to the FieldErrors map of v so long as no entry already exists 
+// for the given field.
+func (v *Validator) AddFieldError(field, msg string) {
     if v.FieldErrors == nil {
         v.FieldErrors = make(map[string]string)
     }
 
-    if _, exists := v.FieldErrors[key]; !exists {
-        v.FieldErrors[key] = message
+    if _, ok := v.FieldErrors[field]; !ok {
+        v.FieldErrors[field] = msg
     }
 }
 
-// CheckField adds an error message to the FieldErrors map only if a
-// validation check is not `ok`.
-func (v *Validator) CheckField(ok bool, key string, message string) {
+// CheckField adds an error message to the FieldErrors map of v only if validation check of `field` is not `ok`.
+func (v *Validator) CheckField(ok bool, field, msg string) {
     if !ok {
-        v.AddFieldError(key, message)
+        v.AddFieldError(field, msg)
     }
-}
-
-// NotEmpty returns true if a value is not an empty string.
-func NotEmpty(value string) bool {
-    return strings.TrimSpace(value) != ""
-}
-
-// MinChars returns true if a value contains at least n characters.
-func MinChars(value string, n int) bool {
-    return utf8.RuneCountInString(value) >= n
-}
-
-// MaxChars returns true if a value contains no more than n characters.
-func MaxChars(value string, n int) bool {
-    return utf8.RuneCountInString(value) <= n
-}
-
-// PermittedValue returns true if a value is in a list of specific permitted values.
-func PermittedValue[T comparable](value T, permittedValues ...T) bool {
-    return slices.Contains(permittedValues, value)
-}
-
-// Match returns true if a value matches a provided compiled regular expression pattern.
-func Match(value string, rx *regexp.Regexp) bool {
-    return rx.MatchString(value)
 }

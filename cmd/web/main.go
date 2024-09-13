@@ -1,38 +1,36 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
-	"database/sql"
+	"errors"
 	"flag"
+	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"snippetbox/internal/models"
 	"time"
 
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
-	"github.com/go-playground/form/v4"
-	_ "github.com/go-sql-driver/mysql"
 )
 
 type application struct {
     debug          bool
     logger         *slog.Logger
-    snippet        models.SnippetModelInterface
-    user           models.UserModelInterface
     templateCache  map[string]*template.Template
-    formDecoder    *form.Decoder
     sessionManager *scs.SessionManager
+    user           models.UserModelInterface
+    snippet        models.SnippetModelInterface
 }
 
 func main() {
     addr := flag.String("addr", ":4000", "HTTP network address")
-    dbDriver := flag.String("dbdriver", "mysql", "Database driver name")
-    dsn := flag.String("dsn",
-        "zeb:zebpwd@tcp(localhost:3306)/snippetbox?parseTime=true",
-        "MySQL data source name")
+    dbDriver := flag.String("driver", "mysql", "Database driver name")
+    dsn := flag.String("dsn", "zzh:zzhpwd@tcp(localhost:3306)/zsnippetbox?parseTime=true", "Data source name")
     debug := flag.Bool("debug", false, "Enable debug mode")
     flag.Parse()
 
@@ -51,8 +49,6 @@ func main() {
         os.Exit(1)
     }
 
-    formDecoder := form.NewDecoder()
-
     sessionManager := scs.New()
     sessionManager.Store = mysqlstore.New(db)
     sessionManager.Lifetime = 12 * time.Hour
@@ -61,11 +57,10 @@ func main() {
     app := &application{
         debug:          *debug,
         logger:         logger,
-        snippet:        &models.SnippetModel{DB: db},
-        user:           &models.UserModel{DB: db},
         templateCache:  templateCache,
-        formDecoder:    formDecoder,
         sessionManager: sessionManager,
+        user:           &models.UserModel{DB: db},
+        snippet:        &models.SnippetModel{DB: db},
     }
 
     tlsConfig := &tls.Config{
@@ -82,24 +77,32 @@ func main() {
         WriteTimeout: 10 * time.Second,
     }
 
-    logger.Info("starting server", "addr", *addr)
+    idleConnsClosed := make(chan struct{})
+    go func() {
+        sigint := make(chan os.Signal, 1)
+        signal.Notify(sigint, os.Interrupt)
+        <-sigint
+
+        // We received an interrupt or kill signal, shut down the HTTP server.
+        if err := srv.Shutdown(context.Background()); err != nil {
+            // Error from closing listeners, or context timeout:
+            logger.Error(fmt.Sprintf("HTTP server Shutdown: %v", err.Error()))
+        }
+
+        close(idleConnsClosed)
+    }()
+
+    logger.Info("starting HTTP server", "addr", *addr)
 
     err = srv.ListenAndServeTLS("./tls/cert.pem", "./tls/key.pem")
-    logger.Error(err.Error())
-    os.Exit(1)
-}
-
-func openDB(driverName string, dsn string) (*sql.DB, error) {
-    db, err := sql.Open(driverName, dsn)
     if err != nil {
-        return nil, err
+        if errors.Is(err, http.ErrServerClosed) {
+            logger.Error("HTTP server closed")
+        } else {
+            // Error starting or closing listener:
+            logger.Error(fmt.Sprintf("HTTP server ListenAndServe: %v", err.Error()))
+        }
     }
 
-    err = db.Ping()
-    if err != nil {
-        db.Close()
-        return nil, err
-    }
-
-    return db, nil
+    <-idleConnsClosed
 }
