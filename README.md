@@ -12,4 +12,5 @@
     A MySQL based session store for SCS.
 ### golang.org/x/crypto/bcrypt
 ### github.com/justinas/nosurf
-    nosurf is an HTTP package for Go that helps you prevent Cross-Site Request Forgery attacks. It acts like a middleware and therefore is compatible with basically any Go HTTP application.
+    nosurf is an HTTP package for Go that helps you prevent Cross-Site Request Forgery attacks. 
+    It acts like a middleware and therefore is compatible with basically any Go HTTP application.
