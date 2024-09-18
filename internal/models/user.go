@@ -19,15 +19,6 @@ type User struct {
     Created        time.Time
 }
 
-// UserModelInterface defines the methods a UserModel struct should implement.
-type UserModelInterface interface {
-    Insert(name, email, password string) error
-    Get(id int) (User, error)
-    Exists(id int) (bool, error)
-    Authenticate(email, password string) (int, error)
-    UpdatePassword(id int, currentPassword, newPassword string) error
-}
-
 // UserModel wraps a *sql.DB connection pool.
 type UserModel struct {
     DB *sql.DB

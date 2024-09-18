@@ -23,8 +23,8 @@ type application struct {
     logger         *slog.Logger
     templateCache  map[string]*template.Template
     sessionManager *scs.SessionManager
-    user           models.UserModelInterface
-    snippet        models.SnippetModelInterface
+    user           userModelInterface
+    snippet        snippetModelInterface
 }
 
 func main() {
