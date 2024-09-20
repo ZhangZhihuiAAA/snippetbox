@@ -65,7 +65,7 @@ func (m *SnippetModel) Get(id int) (Snippet, error) {
 }
 
 // Latest returns n most recently created snippets.
-func (m *SnippetModel) Latest(n int) ([]Snippet, error) {
+func (m *SnippetModel) Latest(n int) (snippets []Snippet, err error) {
     stmt := `SELECT id, title, content, created, expires 
                FROM snippet 
               WHERE expires > UTC_TIMESTAMP() 
@@ -80,9 +80,9 @@ func (m *SnippetModel) Latest(n int) ([]Snippet, error) {
     // method returns. This defer statement should come *after* you check for an error from the
     // Query() method. Otherwise, if Query() returns an error, you'll get a panic trying to close 
     // a nil resultset.
-    defer rows.Close()
-
-    var snippets []Snippet
+    defer func() {
+        err = rows.Close()
+    }()
 
     // Use rows.Next to iterate through the rows in the resultset. This prepares the first (and 
     // then each subsequent) row to be acted on by the rows.Scan() method. If iteration over all 
