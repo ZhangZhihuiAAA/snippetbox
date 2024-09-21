@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"log"
 	"time"
 )
 
@@ -81,7 +82,16 @@ func (m *SnippetModel) Latest(n int) (snippets []Snippet, err error) {
     // Query() method. Otherwise, if Query() returns an error, you'll get a panic trying to close 
     // a nil resultset.
     defer func() {
-        err = rows.Close()
+        closeErr := rows.Close()
+        // If err was already not nil, we prioritize it.
+        if err != nil {
+            if closeErr != nil {
+                // Log the rows.Close() error.
+                log.Printf("failed to close rows: %v", closeErr)
+            }
+            return
+        }
+        err = closeErr
     }()
 
     // Use rows.Next to iterate through the rows in the resultset. This prepares the first (and 
